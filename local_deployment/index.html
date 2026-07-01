@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MineGuard - HSE Command Center (Kideco Hackathon 2026)</title>
+    <!-- Tailwind CSS Play CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        // Tailwind Configuration for MineGuard custom branding palette
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        deepDark: '#0E1117',
+                        slateDark: '#1A1D24',
+                        kidecoRed: '#E30613',
+                        neonGreen: '#00FF88',
+                        infoCyan: '#00D9FF',
+                        warningAmber: '#FFB800'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom styled scrolls */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0E1117;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2A2F3A;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #E30613;
+        }
+        /* Active pulse animations */
+        @keyframes pulse-border {
+            0%, 100% { border-color: rgba(227, 6, 19, 0.3); }
+            50% { border-color: rgba(227, 6, 19, 0.8); }
+        }
+        .active-alert-border {
+            animation: pulse-border 2s infinite;
+        }
+    </style>
+</head>
+<body class="bg-deepDark text-slate-100 min-h-screen flex flex-col font-sans selection:bg-kidecoRed/30 overflow-hidden">
+
+    <!-- TOP HEADER: Kideco Red Signature Header Bar -->
+    <header class="bg-kidecoRed h-14 shrink-0 flex items-center justify-between px-6 shadow-xl relative z-30 select-none">
+        <div class="flex items-center space-x-3">
+            <span class="relative flex h-2.5 w-2.5">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-neonGreen opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-neonGreen"></span>
+            </span>
+            <span class="text-white text-xs font-mono font-black tracking-widest uppercase flex items-center gap-2">
+                MINEGUARD HSE COMMAND CENTER
+                <span class="bg-black/30 text-white font-sans text-[9px] px-2 py-0.5 rounded font-normal normal-case">
+                    Decoupled Live Feed
+                </span>
+            </span>
+        </div>
+
+        <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-2 bg-black/20 border border-white/10 px-3 py-1 rounded-full">
+                <span class="w-1.5 h-1.5 bg-neonGreen rounded-full animate-pulse"></span>
+                <span class="text-white text-[10px] font-bold uppercase tracking-wider font-mono">FastAPI Stream Active</span>
+            </div>
+            <div id="live-clock" class="text-white text-xs font-mono font-semibold hidden md:block">
+                Selasa, 30 Juni 2026 | 02:14:32
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN PORTAL WRAPPER (Sidebar + Viewports) -->
+    <div class="flex flex-1 overflow-hidden">
+        
+        <!-- SIDEBAR NAVIGATION (Left Panel) -->
+        <aside class="w-64 bg-slateDark border-r border-[#2A2F3A] flex flex-col justify-between shrink-0 relative z-20">
+            <div>
+                <!-- Brand block -->
+                <div class="p-6 border-b border-[#2A2F3A] flex items-center space-x-3 bg-gradient-to-b from-[#21252D] to-slateDark">
+                    <div class="p-2 bg-kidecoRed/10 border border-kidecoRed/30 rounded-lg text-kidecoRed">
+                        <i data-lucide="shield-alert" class="w-5 h-5 animate-pulse"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-black text-lg text-white tracking-tight">MineGuard</h1>
+                        <p class="text-[10px] font-mono text-kidecoRed tracking-widest font-bold uppercase">Kideco Hackathon</p>
+                    </div>
+                </div>
+
+                <!-- Navigations (Pure tab toggles in Vanilla JS) -->
+                <nav class="p-4 space-y-1.5">
+                    <button id="nav-dashboard" onclick="switchTab('dashboard')" class="w-full flex items-center space-x-3.5 px-4 py-3 rounded-lg text-sm font-semibold transition-all bg-kidecoRed text-white shadow-[0_0_16px_rgba(227,6,19,0.25)]">
+                        <i data-lucide="layout-dashboard" class="w-4.5 h-4.5"></i>
+                        <span>Dashboard</span>
+                    </button>
+
+                    <button id="nav-registration" onclick="switchTab('registration')" class="w-full flex items-center space-x-3.5 px-4 py-3 rounded-lg text-sm font-semibold transition-all text-slate-400 hover:bg-[#21252D] hover:text-white">
+                        <i data-lucide="user-plus" class="w-4.5 h-4.5"></i>
+                        <span>Face Registration</span>
+                    </button>
+
+                    <button id="nav-cameras" onclick="switchTab('cameras')" class="w-full flex items-center space-x-3.5 px-4 py-3 rounded-lg text-sm font-semibold transition-all text-slate-400 hover:bg-[#21252D] hover:text-white">
+                        <i data-lucide="video" class="w-4.5 h-4.5"></i>
+                        <span>CCTV Live Grid</span>
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Lock and Info stats footer -->
+            <div class="p-4 border-t border-[#2A2F3A]">
+                <div class="bg-[#21252D]/60 border border-slate-800 rounded-lg p-3.5 mb-3 text-xs">
+                    <div class="flex items-center space-x-2 text-neonGreen">
+                        <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+                        <span class="font-bold uppercase tracking-wider text-[9px]">API CONNECTION</span>
+                    </div>
+                    <p class="text-[10px] text-slate-500 mt-1 font-mono leading-relaxed">
+                        Host: http://localhost:8000<br/>
+                        Status: Connected
+                    </p>
+                </div>
+                <button onclick="alert('Log out dari MineGuard command center...')" class="w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg text-xs font-bold text-red-400 hover:bg-red-950/20 hover:text-red-300 transition-all uppercase tracking-wider font-mono">
+                    <i data-lucide="log-out" class="w-4 h-4"></i>
+                    <span>Log Out</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- MAIN DISPLAY PANEL (Dynamic scroll box) -->
+        <main class="flex-1 overflow-y-auto p-6 space-y-6">
+
+            <!-- TAB 1: EXECUTIVE DASHBOARD -->
+            <div id="tab-dashboard" class="space-y-6">
+                
+                <!-- 3 COUNT METRICS CARDS -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    
+                    <!-- Today Violations -->
+                    <div class="relative overflow-hidden bg-slateDark border border-[#2A2F3A] rounded-xl p-5 shadow-lg flex flex-col justify-between group">
+                        <div class="absolute top-0 left-0 w-1.5 h-full bg-kidecoRed"></div>
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs font-medium text-slate-400 tracking-wider uppercase">Violations Today</p>
+                                <h2 id="card-violations-today" class="text-4xl font-black text-white mt-2 tracking-tight">47</h2>
+                            </div>
+                            <div class="p-2.5 bg-red-950/40 border border-red-900/30 rounded-lg text-kidecoRed">
+                                <i data-lucide="shield-alert" class="w-5 h-5 animate-pulse"></i>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex items-center space-x-1.5 text-xs text-kidecoRed font-semibold">
+                            <i data-lucide="trending-up" class="w-4 h-4"></i>
+                            <span>+12% vs yesterday</span>
+                        </div>
+                    </div>
+
+                    <!-- Month Violations -->
+                    <div class="relative overflow-hidden bg-slateDark border border-[#2A2F3A] rounded-xl p-5 shadow-lg flex flex-col justify-between group">
+                        <div class="absolute top-0 left-0 w-1.5 h-full bg-neonGreen"></div>
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs font-medium text-slate-400 tracking-wider uppercase">Violations This Month</p>
+                                <h2 id="card-violations-month" class="text-4xl font-black text-white mt-2 tracking-tight">798</h2>
+                            </div>
+                            <div class="p-2.5 bg-emerald-950/40 border border-emerald-900/30 rounded-lg text-neonGreen">
+                                <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex items-center space-x-1.5 text-xs text-neonGreen font-semibold">
+                            <i data-lucide="trending-down" class="w-4 h-4"></i>
+                            <span>-4.8% vs last month</span>
+                        </div>
+                    </div>
+
+                    <!-- Workers Detected -->
+                    <div class="relative overflow-hidden bg-slateDark border border-[#2A2F3A] rounded-xl p-5 shadow-lg flex flex-col justify-between group">
+                        <div class="absolute top-0 left-0 w-1.5 h-full bg-infoCyan"></div>
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs font-medium text-slate-400 tracking-wider uppercase">Workers Detected</p>
+                                <h2 id="card-workers-detected" class="text-4xl font-black text-white mt-2 tracking-tight">1,862</h2>
+                            </div>
+                            <div class="p-2.5 bg-cyan-950/40 border border-cyan-900/30 rounded-lg text-infoCyan">
+                                <i data-lucide="users" class="w-5 h-5"></i>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex items-center space-x-1.5 text-xs text-infoCyan font-semibold">
+                            <i data-lucide="trending-down" class="w-4 h-4"></i>
+                            <span>-10% vs last month</span>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- PRIMARY DYNAMIC CCTV INSPECTION MONITOR (With Smart Command Toggles) -->
+                <div class="bg-slateDark border border-[#2A2F3A] rounded-xl overflow-hidden shadow-2xl flex flex-col">
+                    
+                    <!-- Header of CCTV Block with Live Pill -->
+                    <div class="bg-[#21252D] px-5 py-4 border-b border-[#2A2F3A] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div class="flex items-center space-x-2.5">
+                            <div class="p-2 bg-[#E30613]/10 border border-[#E30613]/30 rounded text-[#E30613]">
+                                <i data-lucide="video" class="w-4 h-4"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-sm text-white uppercase tracking-wider">HSE AI Live Inspector</h3>
+                                <p class="text-[10px] text-slate-400 mt-0.5">YOLO Model Predictor & Inverse Logic Compliance Auditor</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="w-2 h-2 rounded-full bg-kidecoRed animate-ping"></span>
+                            <span class="text-[10px] font-mono uppercase tracking-widest font-bold text-kidecoRed" id="active-cam-label">CAM-SIMULATION</span>
+                        </div>
+                    </div>
+
+                    <!-- COMMAND CONTROL PANEL (Smart toggles & switches exactly above the CCTV stream) -->
+                    <div class="p-5 border-b border-[#2A2F3A] bg-[#14171D] flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+                        
+                        <!-- 1. Switch Buttons: Camera selections -->
+                        <div class="space-y-2">
+                            <span class="block text-[9px] font-bold text-slate-500 uppercase tracking-widest font-mono">Camera Feed Source</span>
+                            <div class="flex items-center gap-2">
+                                <button id="btn-cam-sim" onclick="setCamera('CAM-SIMULATION')" class="px-4 py-2 rounded-lg text-xs font-bold transition-all bg-kidecoRed text-white shadow-[0_0_12px_rgba(227,6,19,0.3)] border border-kidecoRed flex items-center gap-1.5">
+                                    <i data-lucide="database" class="w-3.5 h-3.5"></i>
+                                    <span>🔄 Kamera Lapangan (Simulasi)</span>
+                                </button>
+                                <button id="btn-cam-live" onclick="setCamera('STAGE-LIVE')" class="px-4 py-2 rounded-lg text-xs font-bold transition-all bg-[#21252D] text-slate-400 border border-slate-700 hover:text-white hover:bg-slate-800 flex items-center gap-1.5">
+                                    <i data-lucide="radio" class="w-3.5 h-3.5"></i>
+                                    <span>🔴 LIVE STAGE AUDIT (Webcam)</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 2. Smart Toggle Checkboxes: Requirements toggles -->
+                        <div class="space-y-2 flex-1 max-w-2xl lg:ml-6">
+                            <span class="block text-[9px] font-bold text-slate-500 uppercase tracking-widest font-mono">Dynamic Compliance Requirements (YOLO Checks)</span>
+                            <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                                
+                                <!-- Helm -->
+                                <label class="relative flex items-center justify-between px-3.5 py-2 rounded-lg bg-[#1D212A] border border-slate-700 hover:border-neonGreen/40 cursor-pointer select-none transition-all">
+                                    <span class="text-xs font-bold text-slate-200">🛡️ Helm</span>
+                                    <input type="checkbox" id="chk-helmet" onchange="toggleRequirement('helmet')" checked class="w-4.5 h-4.5 text-kidecoRed bg-slate-800 border-slate-700 rounded focus:ring-kidecoRed cursor-pointer accent-kidecoRed">
+                                </label>
+
+                                <!-- Rompi -->
+                                <label class="relative flex items-center justify-between px-3.5 py-2 rounded-lg bg-[#1D212A] border border-slate-700 hover:border-neonGreen/40 cursor-pointer select-none transition-all">
+                                    <span class="text-xs font-bold text-slate-200">🦺 Rompi</span>
+                                    <input type="checkbox" id="chk-vest" onchange="toggleRequirement('vest')" checked class="w-4.5 h-4.5 text-kidecoRed bg-slate-800 border-slate-700 rounded focus:ring-kidecoRed cursor-pointer accent-kidecoRed">
+                                </label>
+
+                                <!-- Sepatu -->
+                                <label class="relative flex items-center justify-between px-3.5 py-2 rounded-lg bg-[#1D212A] border border-slate-700 hover:border-neonGreen/40 cursor-pointer select-none transition-all">
+                                    <span class="text-xs font-bold text-slate-200">🥾 Sepatu</span>
+                                    <input type="checkbox" id="chk-boots" onchange="toggleRequirement('boots')" checked class="w-4.5 h-4.5 text-kidecoRed bg-slate-800 border-slate-700 rounded focus:ring-kidecoRed cursor-pointer accent-kidecoRed">
+                                </label>
+
+                                <!-- Kacamata -->
+                                <label class="relative flex items-center justify-between px-3.5 py-2 rounded-lg bg-[#1D212A] border border-slate-700 hover:border-neonGreen/40 cursor-pointer select-none transition-all">
+                                    <span class="text-xs font-bold text-slate-200">🥽 Kaca</span>
+                                    <input type="checkbox" id="chk-goggles" onchange="toggleRequirement('goggles')" checked class="w-4.5 h-4.5 text-kidecoRed bg-slate-800 border-slate-700 rounded focus:ring-kidecoRed cursor-pointer accent-kidecoRed">
+                                </label>
+
+                                <!-- Sarung Tangan -->
+                                <label class="relative flex items-center justify-between px-3.5 py-2 rounded-lg bg-[#1D212A] border border-slate-700 hover:border-neonGreen/40 cursor-pointer select-none transition-all">
+                                    <span class="text-xs font-bold text-slate-200">🧤 Glove</span>
+                                    <input type="checkbox" id="chk-gloves" onchange="toggleRequirement('gloves')" class="w-4.5 h-4.5 text-kidecoRed bg-slate-800 border-slate-700 rounded focus:ring-kidecoRed cursor-pointer accent-kidecoRed">
+                                </label>
+
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- MONITOR FRAME -->
+                    <div class="relative bg-black aspect-video flex items-center justify-center overflow-hidden">
+                        
+                        <!-- CCTV Video Tag -->
+                        <img id="main-cctv" src="http://localhost:8000/api/cctv/stream/CAM-SIMULATION?req_helmet=true&req_vest=true&req_boots=true&req_goggles=true&req_gloves=false" alt="Main Live stream monitor" onerror="handleMainStreamError(this)" class="w-full h-full object-contain">
+                        
+                        <!-- HUD Watermarks and status overlay -->
+                        <div class="absolute top-4 left-4 flex items-center space-x-2 bg-black/70 backdrop-blur border border-slate-800 px-3 py-1.5 rounded-lg text-white font-mono text-xs select-none">
+                            <span class="w-2 h-2 bg-kidecoRed rounded-full animate-ping"></span>
+                            <span class="font-bold tracking-wider">LIVE FEED STAGE MONITOR</span>
+                        </div>
+
+                        <div class="absolute bottom-4 left-4 bg-black/70 backdrop-blur border border-slate-800 p-3.5 rounded-lg text-slate-300 font-mono text-[10px] leading-relaxed hidden sm:block select-none">
+                            SYSTEM: <span class="text-white font-bold">MINEGUARD V1.2.0</span><br/>
+                            VRE: <span class="text-neonGreen">YOLO v8s HSE</span><br/>
+                            INFERENCE LATENCY: <span class="text-infoCyan">12.5 ms</span>
+                        </div>
+
+                        <!-- Top right logo watermark -->
+                        <div class="absolute top-4 right-4 text-right hidden sm:block font-mono select-none">
+                            <span class="text-white text-xs font-black tracking-widest uppercase">KIDECO</span>
+                            <p class="text-[9px] text-[#E30613] font-bold">INNOVATION CHARTER 2026</p>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <!-- AI QUICK INSIGHTS PANEL -->
+                <div class="bg-slateDark border border-[#2A2F3A] rounded-xl overflow-hidden shadow-lg">
+                    <div class="bg-[#21252D] border-b border-[#2A2F3A] px-5 py-3.5 flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <i data-lucide="sparkles" class="w-4.5 h-4.5 text-neonGreen"></i>
+                            <h3 class="font-bold text-xs uppercase tracking-wider text-white">AI Quick Insights</h3>
+                            <span class="text-[10px] text-slate-400 font-normal hidden sm:inline">(Auto-generated from last 14 days of CV detections)</span>
+                        </div>
+                        <span class="text-[10px] font-bold text-neonGreen flex items-center gap-1">
+                            <span class="w-1.5 h-1.5 bg-neonGreen rounded-full animate-ping"></span> Live Analyzer
+                        </span>
+                    </div>
+                    <div class="p-5 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Left Insights Column -->
+                        <div class="space-y-3">
+                            <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">INSIGHTS</h4>
+                            <div class="space-y-2.5">
+                                <div class="bg-[#21252D] border-l-4 border-kidecoRed p-3 rounded-r-lg">
+                                    <p class="text-xs font-bold text-white mb-0.5">Raising Daily Violations</p>
+                                    <p class="text-xs text-slate-300">Today's safety violations increased by <b class="text-kidecoRed">12%</b> compared to yesterday, indicating a potential decline in compliance.</p>
+                                </div>
+                                <div class="bg-[#21252D] border-l-4 border-warningAmber p-3 rounded-r-lg">
+                                    <p class="text-xs font-bold text-white mb-0.5">Helmet Compliance is the Main Issue</p>
+                                    <p class="text-xs text-slate-300">Missing safety helmets account for the highest percentage of PPE violations, making it the most critical HSE concern.</p>
+                                </div>
+                                <div class="bg-[#21252D] border-l-4 border-infoCyan p-3 rounded-r-lg">
+                                    <p class="text-xs font-bold text-white mb-0.5">High-Risk Violation Hours Detected</p>
+                                    <p class="text-xs text-slate-300">Violation trends peak around <b class="text-infoCyan font-mono">03:00-04:00</b> and <b class="text-infoCyan font-mono">16:00-17:00</b> during shift crossovers.</p>
+                                </div>
+                                <div class="bg-[#21252D] border-l-4 border-kidecoRed p-3 rounded-r-lg">
+                                    <p class="text-xs font-bold text-white mb-0.5">Pit B is the Highest-Risk Area</p>
+                                    <p class="text-xs text-slate-300">Pit B contributes <b class="text-kidecoRed">32.1%</b> of safety violations, making it the primary hotspot for monitoring.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Right Actions Column -->
+                        <div class="space-y-3 flex flex-col justify-between">
+                            <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">RECOMMENDED HSE ACTIONS</h4>
+                            <div class="space-y-3 flex-1 flex flex-col justify-between">
+                                <div class="bg-emerald-950/20 border border-emerald-500/30 p-4 rounded-xl flex items-start space-x-3.5">
+                                    <div class="p-2 bg-emerald-950/60 rounded-lg text-neonGreen mt-0.5"><i data-lucide="zap" class="w-4 h-4"></i></div>
+                                    <div>
+                                        <span class="text-[9px] font-bold text-neonGreen uppercase bg-emerald-950 px-1.5 py-0.5 rounded border border-emerald-500/30">Action Required</span>
+                                        <p class="text-xs font-bold text-white mt-1">Tambah Inspeksi Lapangan & Safety Briefing</p>
+                                        <p class="text-[11px] text-slate-300 mt-0.5">Tambah inspeksi lapangan & safety briefing untuk shift Workshop.</p>
+                                    </div>
+                                </div>
+                                <div class="bg-emerald-950/20 border border-emerald-500/30 p-4 rounded-xl flex items-start space-x-3.5">
+                                    <div class="p-2 bg-emerald-950/60 rounded-lg text-neonGreen mt-0.5"><i data-lucide="clock" class="w-4 h-4"></i></div>
+                                    <div>
+                                        <span class="text-[9px] font-bold text-neonGreen uppercase bg-emerald-950 px-1.5 py-0.5 rounded border border-emerald-500/30">Action Required</span>
+                                        <p class="text-xs font-bold text-white mt-1">Inspeksi Workshop Shift Sore</p>
+                                        <p class="text-[11px] text-slate-300 mt-0.5">Lakukan audit kepatuhan APD menyeluruh di Workshop sebelum shift sore masuk.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DATA VISUALIZATION TABLES & GRAPHS -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    
+                    <!-- Left: Top Locations contribution table -->
+                    <div class="bg-slateDark border border-[#2A2F3A] rounded-xl p-5 shadow-lg">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h3 class="font-bold text-sm text-white uppercase tracking-wider">Top Violations Location</h3>
+                                <p class="text-[10px] text-slate-400 mt-0.5">Site contribution statistics</p>
+                            </div>
+                            <span class="px-2 py-0.5 bg-red-950/40 text-kidecoRed text-[9px] border border-red-900/30 rounded uppercase font-mono font-bold">HOTSPOTS</span>
+                        </div>
+                        <div class="space-y-2.5" id="locations-contribution-list">
+                            <div class="bg-[#21252D] border border-[#2A2F3A] rounded-lg p-3.5 flex items-center justify-between">
+                                <div class="flex items-center space-x-4">
+                                    <span class="w-7 h-7 flex items-center justify-center rounded-lg bg-slateDark border border-slate-700 text-xs font-bold text-white font-mono">1</span>
+                                    <div>
+                                        <h4 class="font-bold text-xs text-white">Pit B</h4>
+                                        <span class="inline-block mt-0.5 text-[8px] font-bold uppercase tracking-wider px-1 bg-red-950 text-kidecoRed rounded border border-red-900/30">CRITICAL</span>
+                                    </div>
+                                </div>
+                                <div class="text-right font-mono">
+                                    <p class="text-xs font-bold text-white">412 Kasus</p>
+                                    <p class="text-[10px] text-slate-500">32.1% contribution</p>
+                                </div>
+                            </div>
+                            <div class="bg-[#21252D] border border-[#2A2F3A] rounded-lg p-3.5 flex items-center justify-between">
+                                <div class="flex items-center space-x-4">
+                                    <span class="w-7 h-7 flex items-center justify-center rounded-lg bg-slateDark border border-slate-700 text-xs font-bold text-white font-mono">2</span>
+                                    <div>
+                                        <h4 class="font-bold text-xs text-white">Workshop</h4>
+                                        <span class="inline-block mt-0.5 text-[8px] font-bold uppercase tracking-wider px-1 bg-red-950 text-kidecoRed rounded border border-red-900/30">CRITICAL</span>
+                                    </div>
+                                </div>
+                                <div class="text-right font-mono">
+                                    <p class="text-xs font-bold text-white">210 Kasus</p>
+                                    <p class="text-[10px] text-slate-500">28.8% contribution</p>
+                                </div>
+                            </div>
+                            <div class="bg-[#21252D] border border-[#2A2F3A] rounded-lg p-3.5 flex items-center justify-between">
+                                <div class="flex items-center space-x-4">
+                                    <span class="w-7 h-7 flex items-center justify-center rounded-lg bg-slateDark border border-slate-700 text-xs font-bold text-white font-mono">3</span>
+                                    <div>
+                                        <h4 class="font-bold text-xs text-white">Pit A</h4>
+                                        <span class="inline-block mt-0.5 text-[8px] font-bold uppercase tracking-wider px-1 bg-yellow-950 text-warningAmber rounded border border-yellow-900/30">MEDIUM</span>
+                                    </div>
+                                </div>
+                                <div class="text-right font-mono">
+                                    <p class="text-xs font-bold text-white">186 Kasus</p>
+                                    <p class="text-[10px] text-slate-500">10.8% contribution</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: PPE Pareto Rankings with Custom HTML/CSS Donut Chart -->
+                    <div class="bg-slateDark border border-[#2A2F3A] rounded-xl p-5 shadow-lg flex flex-col justify-between">
+                        <div>
+                            <h3 class="font-bold text-sm text-white uppercase tracking-wider">Most Frequent PPE Violations</h3>
+                            <p class="text-[10px] text-slate-400 mt-0.5">Pareto ranking contribution share</p>
+                        </div>
+                        <div class="flex flex-col sm:flex-row items-center justify-between gap-6 my-4">
+                            <!-- Custom Donut SVG -->
+                            <div class="relative w-32 h-32 shrink-0">
+                                <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                                    <circle cx="50" cy="50" r="35" fill="transparent" stroke="#E30613" stroke-width="10" stroke-dasharray="70.6 220" stroke-dashoffset="0" />
+                                    <circle cx="50" cy="50" r="35" fill="transparent" stroke="#A855F7" stroke-width="10" stroke-dasharray="63.3 220" stroke-dashoffset="-70.6" />
+                                    <circle cx="50" cy="50" r="35" fill="transparent" stroke="#3B82F6" stroke-width="10" stroke-dasharray="23.7 220" stroke-dashoffset="-133.9" />
+                                    <circle cx="50" cy="50" r="35" fill="transparent" stroke="#10B981" stroke-width="10" stroke-dasharray="21.5 220" stroke-dashoffset="-157.6" />
+                                </svg>
+                                <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+                                    <span class="text-xl font-black text-white font-mono">858</span>
+                                    <span class="text-[8px] text-slate-400 uppercase tracking-widest font-semibold">Violations</span>
+                                </div>
+                            </div>
+                            <!-- Legend List -->
+                            <div class="flex-1 w-full space-y-2 text-xs" id="ppe-pareto-legend">
+                                <div class="flex items-center justify-between p-1 bg-[#21252D]/40 rounded">
+                                    <div class="flex items-center space-x-2">
+                                        <span class="w-2 h-2 rounded-full bg-kidecoRed"></span>
+                                        <span class="text-slate-300">No Safety Helmet</span>
+                                    </div>
+                                    <span class="font-mono text-white font-bold">412 <span class="text-slate-500 font-normal">(32.1%)</span></span>
+                                </div>
+                                <div class="flex items-center justify-between p-1 bg-[#21252D]/40 rounded">
+                                    <div class="flex items-center space-x-2">
+                                        <span class="w-2 h-2 rounded-full bg-[#A855F7]"></span>
+                                        <span class="text-slate-300">No Safety Goggles</span>
+                                    </div>
+                                    <span class="font-mono text-white font-bold">210 <span class="text-slate-500 font-normal">(28.8%)</span></span>
+                                </div>
+                                <div class="flex items-center justify-between p-1 bg-[#21252D]/40 rounded">
+                                    <div class="flex items-center space-x-2">
+                                        <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                                        <span class="text-slate-300">No Safety Boots</span>
+                                    </div>
+                                    <span class="font-mono text-white font-bold">186 <span class="text-slate-500 font-normal">(10.8%)</span></span>
+                                </div>
+                                <div class="flex items-center justify-between p-1 bg-[#21252D]/40 rounded">
+                                    <div class="flex items-center space-x-2">
+                                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                        <span class="text-slate-300">No Safety Vest</span>
+                                    </div>
+                                    <span class="font-mono text-white font-bold">50 <span class="text-slate-500 font-normal">(9.8%)</span></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- TAB 2: FACE REGISTRATION -->
+            <div id="tab-registration" class="space-y-6 hidden">
+                
+                <!-- Registration Form block -->
+                <div class="bg-slateDark border border-[#2A2F3A] rounded-xl overflow-hidden shadow-lg">
+                    <div class="bg-[#21252D] border-b border-[#2A2F3A] px-5 py-4 flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <i data-lucide="user-plus" class="w-5 h-5 text-kidecoRed"></i>
+                            <h3 class="font-bold text-sm uppercase tracking-wider text-white">Register New Worker</h3>
+                        </div>
+                        <span class="text-[10px] text-slate-400">Fill details and upload a photo for facial recognition</span>
+                    </div>
+
+                    <form id="worker-register-form" onsubmit="handleRegisterWorker(event)" class="p-6">
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            
+                            <!-- Column 1: Photo Browse -->
+                            <div class="border-2 border-dashed border-[#2A2F3A] rounded-xl p-5 bg-[#21252D]/30 flex flex-col items-center justify-center text-center">
+                                <div class="w-14 h-14 bg-slateDark border border-[#2A2F3A] rounded-full flex items-center justify-center text-slate-400 mb-3">
+                                    <i data-lucide="upload" class="w-5 h-5"></i>
+                                </div>
+                                <h4 class="text-xs font-bold text-white">Worker Photo ID</h4>
+                                <p class="text-[10px] text-slate-500 mt-1 mb-3">Drag and drop or select PNG/JPG up to 5MB</p>
+                                <label class="px-4 py-1.5 bg-kidecoRed hover:bg-red-700 text-white text-[11px] font-semibold rounded cursor-pointer transition-colors">
+                                    Browse File
+                                    <input type="file" id="worker-photo-input" class="hidden">
+                                </label>
+                            </div>
+
+                            <!-- Column 2 & 3: Field details -->
+                            <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1.5">Worker ID *</label>
+                                    <input type="text" id="reg-id" required placeholder="e.g. WK-1234" class="w-full bg-[#21252D] border border-[#2A2F3A] rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-kidecoRed text-white font-mono">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1.5">Full Name *</label>
+                                    <input type="text" id="reg-name" required placeholder="Nama lengkap pekerja" class="w-full bg-[#21252D] border border-[#2A2F3A] rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-kidecoRed text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1.5">Department *</label>
+                                    <select id="reg-dept" required class="w-full bg-[#21252D] border border-[#2A2F3A] rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-kidecoRed text-white">
+                                        <option value="">Pilih Departemen</option>
+                                        <option value="IT & Digitalization">IT & Digitalization</option>
+                                        <option value="Safety & HSE">Safety & HSE</option>
+                                        <option value="Maintenance">Maintenance</option>
+                                        <option value="Mining Operation">Mining Operation</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1.5">Position *</label>
+                                    <input type="text" id="reg-pos" required placeholder="e.g. Supervisor, Safety Officer" class="w-full bg-[#21252D] border border-[#2A2F3A] rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-kidecoRed text-white">
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1.5">Status</label>
+                                    <div class="flex space-x-2">
+                                        <button type="button" onclick="setRegStatus('Active')" id="status-btn-active" class="flex-1 py-2 bg-emerald-950/40 border border-neonGreen text-neonGreen font-semibold rounded-lg text-xs">Active</button>
+                                        <button type="button" onclick="setRegStatus('Inactive')" id="status-btn-inactive" class="flex-1 py-2 bg-[#21252D] border border-[#2A2F3A] text-slate-400 font-semibold rounded-lg text-xs">Inactive</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- Form action buttons -->
+                        <div class="mt-6 pt-4 border-t border-[#2A2F3A] flex justify-end space-x-3">
+                            <button type="button" onclick="clearRegForm()" class="px-4 py-2 bg-[#21252D] border border-[#2A2F3A] text-slate-300 text-xs font-semibold rounded-lg hover:bg-[#2A2F3A]">Clear</button>
+                            <button type="submit" class="px-4 py-2 bg-kidecoRed text-white text-xs font-semibold rounded-lg hover:bg-red-700">+ Register Worker</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Enrolled Workers table list -->
+                <div class="bg-slateDark border border-[#2A2F3A] rounded-xl overflow-hidden shadow-lg">
+                    <div class="bg-[#21252D] border-b border-[#2A2F3A] px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div>
+                            <h3 class="font-bold text-sm uppercase tracking-wider text-white">Registered Workers</h3>
+                            <p id="workers-count-label" class="text-[10px] text-slate-400 mt-0.5">0 workers enrolled</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="relative">
+                                <i data-lucide="search" class="w-3.5 h-3.5 text-slate-500 absolute left-3 top-2.5"></i>
+                                <input type="text" id="worker-search-input" onkeyup="renderWorkersTable()" placeholder="Cari nama atau ID..." class="bg-[#21252D] border border-[#2A2F3A] text-white rounded-lg pl-9 pr-3 py-1.5 text-xs focus:outline-none focus:border-kidecoRed w-44">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-xs">
+                            <thead>
+                                <tr class="border-b border-[#2A2F3A] bg-[#21252D]/30 text-slate-400 text-[10px] uppercase font-bold tracking-wider">
+                                    <th class="py-3 px-5">Photo</th>
+                                    <th class="py-3 px-5">Worker ID</th>
+                                    <th class="py-3 px-5">Name</th>
+                                    <th class="py-3 px-5">Department</th>
+                                    <th class="py-3 px-5">Position</th>
+                                    <th class="py-3 px-5">Status</th>
+                                    <th class="py-3 px-5 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="workers-table-body" class="divide-y divide-[#21252D]">
+                                <!-- Injected dynamically via JS fetch -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- TAB 3: LIVE CCTV MATRIX GRID -->
+            <div id="tab-cameras" class="space-y-6 hidden">
+                
+                <div class="bg-slateDark border border-[#2A2F3A] rounded-xl p-4 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <h3 class="font-bold text-sm text-white uppercase tracking-wider flex items-center gap-2">
+                            <i data-lucide="video" class="w-4.5 h-4.5 text-kidecoRed"></i>
+                            CCTV Matrix Command Matrix
+                        </h3>
+                        <p class="text-[10px] text-slate-400 mt-0.5">Aliran video asinkronus (streaming) langsung dari endpoint Python FastAPI port 8000</p>
+                    </div>
+                </div>
+
+                <!-- Camera stream elements grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    
+                    <!-- Camera 1: CAM-WS-03 (Workshop) -->
+                    <div class="bg-slateDark border border-[#2A2F3A] rounded-xl overflow-hidden shadow-lg flex flex-col justify-between">
+                        <div class="relative overflow-hidden aspect-video bg-black">
+                            <img src="http://localhost:8000/api/cctv/stream/CAM-WS-03" alt="CAM-WS-03 Feed" onerror="handleStreamError(this, 'CAM-WS-03')" class="w-full h-full object-cover">
+                            <div class="absolute top-2 right-2 bg-kidecoRed text-white text-[9px] font-bold px-1.5 py-0.5 rounded font-mono">CAM-WS-03</div>
+                            <div class="absolute bottom-2 right-2 bg-[#21252D] border border-slate-700 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">Workshop</div>
+                        </div>
+                        <div class="p-4 bg-[#21252D]/40">
+                            <div class="grid grid-cols-2 gap-4 text-center text-xs">
+                                <div class="border-r border-slate-800">
+                                    <p class="text-[10px] text-slate-400 uppercase font-semibold">Violations 24H</p>
+                                    <p class="text-lg font-black text-white mt-1 font-mono">84</p>
+                                </div>
+                                <div>
+                                    <p class="text-[10px] text-slate-400 uppercase font-semibold">Detected 24H</p>
+                                    <p class="text-lg font-black text-white mt-1 font-mono">108</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Camera 2: CAM-LP-05 (Pit A) -->
+                    <div class="bg-slateDark border border-[#2A2F3A] rounded-xl overflow-hidden shadow-lg flex flex-col justify-between">
+                        <div class="relative overflow-hidden aspect-video bg-black">
+                            <img src="http://localhost:8000/api/cctv/stream/CAM-LP-05" alt="CAM-LP-05 Feed" onerror="handleStreamError(this, 'CAM-LP-05')" class="w-full h-full object-cover">
+                            <div class="absolute top-2 right-2 bg-kidecoRed text-white text-[9px] font-bold px-1.5 py-0.5 rounded font-mono">CAM-LP-05</div>
+                            <div class="absolute bottom-2 right-2 bg-[#21252D] border border-slate-700 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">Pit A</div>
+                        </div>
+                        <div class="p-4 bg-[#21252D]/40">
+                            <div class="grid grid-cols-2 gap-4 text-center text-xs">
+                                <div class="border-r border-slate-800">
+                                    <p class="text-[10px] text-slate-400 uppercase font-semibold">Violations 24H</p>
+                                    <p class="text-lg font-black text-white mt-1 font-mono">32</p>
+                                </div>
+                                <div>
+                                    <p class="text-[10px] text-slate-400 uppercase font-semibold">Detected 24H</p>
+                                    <p class="text-lg font-black text-white mt-1 font-mono">108</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Camera 3: CAM-PB-07 (Pit B) -->
+                    <div class="bg-slateDark border border-[#2A2F3A] rounded-xl overflow-hidden shadow-lg flex flex-col justify-between animate-pulse active-alert-border">
+                        <div class="relative overflow-hidden aspect-video bg-black">
+                            <img src="http://localhost:8000/api/cctv/stream/CAM-PB-07" alt="CAM-PB-07 Feed" onerror="handleStreamError(this, 'CAM-PB-07')" class="w-full h-full object-cover">
+                            <div class="absolute top-2 right-2 bg-kidecoRed text-white text-[9px] font-bold px-1.5 py-0.5 rounded font-mono">CAM-PB-07</div>
+                            <div class="absolute bottom-2 right-2 bg-[#21252D] border border-slate-700 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">Pit B</div>
+                        </div>
+                        <div class="p-4 bg-[#21252D]/40">
+                            <div class="grid grid-cols-2 gap-4 text-center text-xs">
+                                <div class="border-r border-slate-800">
+                                    <p class="text-[10px] text-slate-400 uppercase font-semibold text-kidecoRed font-bold">Violations 24H</p>
+                                    <p class="text-lg font-black text-kidecoRed mt-1 font-mono">24</p>
+                                </div>
+                                <div>
+                                    <p class="text-[10px] text-slate-400 uppercase font-semibold">Detected 24H</p>
+                                    <p class="text-lg font-black text-white mt-1 font-mono">48</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </main>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // Default API Address pointing to local FastAPI server (Port 8000)
+        const API_BASE = "http://localhost:8000";
+        
+        // Active Stream toggles states matching default checkboxes
+        let activeCamera = "CAM-SIMULATION";
+        let reqHelmet = true;
+        let reqVest = true;
+        let reqBoots = true;
+        let reqGoggles = true;
+        let reqGloves = false;
+
+        let workersCache = [];
+        let regStatus = 'Active';
+
+        // --- CLOCK CONTROLLER ---
+        function updateClock() {
+            const days = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+            const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+            const now = new Date();
+            
+            const dayName = days[now.getDay()];
+            const dayNum = now.getDate();
+            const monthName = months[now.getMonth()];
+            const year = now.getFullYear();
+            
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            
+            const formattedClock = `${dayName}, ${dayNum} ${monthName} ${year} | ${hours}:${minutes}:${seconds}`;
+            document.getElementById('live-clock').innerText = formattedClock;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // --- TAB SWITCHER ---
+        function switchTab(tabName) {
+            const tabs = ['dashboard', 'registration', 'cameras'];
+            tabs.forEach(t => {
+                const el = document.getElementById(`tab-${t}`);
+                const nav = document.getElementById(`nav-${t}`);
+                if (t === tabName) {
+                    el.classList.remove('hidden');
+                    nav.className = "w-full flex items-center space-x-3.5 px-4 py-3 rounded-lg text-sm font-semibold transition-all bg-kidecoRed text-white shadow-[0_0_16px_rgba(227,6,19,0.25)]";
+                } else {
+                    el.classList.add('hidden');
+                    nav.className = "w-full flex items-center space-x-3.5 px-4 py-3 rounded-lg text-sm font-semibold transition-all text-slate-400 hover:bg-[#21252D] hover:text-white";
+                }
+            });
+        }
+
+        // --- DYNAMIC CCTV STREAM CONTROLLER ---
+        function updateCCTVStream() {
+            const mainCctv = document.getElementById('main-cctv');
+            if (!mainCctv) return;
+
+            // Update Header Display Text
+            document.getElementById('active-cam-label').innerText = activeCamera;
+
+            // Force dynamic URL parameter reconstruction to live stream FastAPI with specific toggles
+            const streamUrl = `${API_BASE}/api/cctv/stream/${activeCamera}?req_helmet=${reqHelmet}&req_vest=${reqVest}&req_boots=${reqBoots}&req_goggles=${reqGoggles}&req_gloves=${reqGloves}`;
+            
+            // Apply new source stream seamlessly without reloading
+            mainCctv.src = streamUrl;
+            mainCctv.classList.remove('grayscale', 'opacity-40');
+            
+            // Remove fallback overlay badge if any
+            const overlay = mainCctv.parentElement.querySelector('.fallback-badge');
+            if (overlay) overlay.remove();
+        }
+
+        function setCamera(camera) {
+            activeCamera = camera;
+            
+            const btnSim = document.getElementById('btn-cam-sim');
+            const btnLive = document.getElementById('btn-cam-live');
+
+            if (camera === "CAM-SIMULATION") {
+                btnSim.className = "px-4 py-2 rounded-lg text-xs font-bold transition-all bg-kidecoRed text-white shadow-[0_0_12px_rgba(227,6,19,0.3)] border border-kidecoRed flex items-center gap-1.5";
+                btnLive.className = "px-4 py-2 rounded-lg text-xs font-bold transition-all bg-[#21252D] text-slate-400 border border-slate-700 hover:text-white hover:bg-slate-800 flex items-center gap-1.5";
+            } else {
+                btnSim.className = "px-4 py-2 rounded-lg text-xs font-bold transition-all bg-[#21252D] text-slate-400 border border-slate-700 hover:text-white hover:bg-slate-800 flex items-center gap-1.5";
+                btnLive.className = "px-4 py-2 rounded-lg text-xs font-bold transition-all bg-emerald-600 text-white shadow-[0_0_12px_rgba(16,185,129,0.3)] border border-emerald-500 animate-pulse flex items-center gap-1.5";
+            }
+
+            updateCCTVStream();
+        }
+
+        function toggleRequirement(type) {
+            if (type === 'helmet') reqHelmet = document.getElementById('chk-helmet').checked;
+            if (type === 'vest') reqVest = document.getElementById('chk-vest').checked;
+            if (type === 'boots') reqBoots = document.getElementById('chk-boots').checked;
+            if (type === 'goggles') reqGoggles = document.getElementById('chk-goggles').checked;
+            if (type === 'gloves') reqGloves = document.getElementById('chk-gloves').checked;
+
+            updateCCTVStream();
+        }
+
+        // --- API DATA SYNCHRONIZATIONS ---
+
+        async function fetchDashboardMetrics() {
+            try {
+                const res = await fetch(`${API_BASE}/api/dashboard/metrics`);
+                if (!res.ok) throw new Error("Gagal mengambil metrik");
+                const data = await res.json();
+                
+                // Update metrics values
+                document.getElementById('card-violations-today').innerText = data.violations_today;
+                document.getElementById('card-violations-month').innerText = data.violations_this_month;
+                document.getElementById('card-workers-detected').innerText = data.workers_detected_this_month.toLocaleString();
+            } catch (err) {
+                console.warn("FastAPI server offline. Fallback lokal diaktifkan.", err);
+            }
+        }
+
+        async function fetchWorkers() {
+            try {
+                const res = await fetch(`${API_BASE}/api/workers`);
+                if (!res.ok) throw new Error("Gagal mengambil data pekerja");
+                workersCache = await res.json();
+            } catch (err) {
+                // Fallback registered workers data
+                workersCache = [
+                    {id: "WK-1234", name: "Vanessa Pakan", department: "IT & Digitalization", position: "Manager", status: "Active"},
+                    {id: "WK-1192", name: "Bhisma Prayogi", department: "Safety & HSE", position: "Safety Officer", status: "Active"},
+                    {id: "WK-3014", name: "Gian Al Haritz", department: "Maintenance", position: "Technician", status: "Active"},
+                    {id: "WK-0872", name: "Travis Edrick", department: "Safety & HSE", position: "Supervisor", status: "Active"}
+                ];
+            }
+            renderWorkersTable();
+        }
+
+        function renderWorkersTable() {
+            const tableBody = document.getElementById('workers-table-body');
+            const searchVal = document.getElementById('worker-search-input').value.toLowerCase();
+            tableBody.innerHTML = '';
+
+            const filtered = workersCache.filter(w => 
+                w.id.toLowerCase().includes(searchVal) || 
+                w.name.toLowerCase().includes(searchVal)
+            );
+
+            document.getElementById('workers-count-label').innerText = `${filtered.length} workers enrolled`;
+
+            filtered.forEach(w => {
+                const seed = w.name.replace(/\s+/g, '');
+                const photoUrl = `https://api.dicebear.com/7.x/adventurer/svg?seed=${seed}`;
+                
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-[#21252D]/40 transition-colors";
+                tr.innerHTML = `
+                    <td class="py-3 px-5">
+                        <img src="${photoUrl}" class="w-8 h-8 rounded-full border border-slate-700 bg-slate-800" alt="${w.name}">
+                    </td>
+                    <td class="py-3 px-5 font-mono font-bold text-kidecoRed">${w.id}</td>
+                    <td class="py-3 px-5 font-semibold text-white">${w.name}</td>
+                    <td class="py-3 px-5 text-slate-300">${w.department}</td>
+                    <td class="py-3 px-5 text-slate-300">${w.position}</td>
+                    <td class="py-3 px-5">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                            w.status === 'Active' 
+                                ? 'bg-emerald-950/40 text-neonGreen border-emerald-500/20' 
+                                : 'bg-red-950/40 text-kidecoRed border-red-500/20'
+                        }">${w.status}</span>
+                    </td>
+                    <td class="py-3 px-5 text-right">
+                        <button onclick="handleDeleteWorker('${w.id}')" class="p-1 bg-[#21252D] rounded text-slate-400 hover:text-kidecoRed border border-[#2A2F3A] hover:border-kidecoRed/50 transition-colors">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </td>
+                `;
+                tableBody.appendChild(tr);
+            });
+            
+            // Re-render Lucide icons
+            lucide.createIcons();
+        }
+
+        async function handleRegisterWorker(e) {
+            e.preventDefault();
+            const id = document.getElementById('reg-id').value;
+            const name = document.getElementById('reg-name').value;
+            const dept = document.getElementById('reg-dept').value;
+            const pos = document.getElementById('reg-pos').value;
+
+            const newWorker = { id, name, department: dept, position: pos, status: regStatus };
+
+            try {
+                const res = await fetch(`${API_BASE}/api/workers`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newWorker)
+                });
+                if (res.ok) {
+                    alert('Pekerja berhasil didaftarkan ke FastAPI!');
+                }
+            } catch (err) {
+                console.warn("FastAPI offline. Menyimpan secara lokal di cache.");
+            }
+
+            workersCache.unshift(newWorker);
+            renderWorkersTable();
+            clearRegForm();
+        }
+
+        async function handleDeleteWorker(workerId) {
+            if (!confirm(`Hapus pekerja dengan ID: ${workerId}?`)) return;
+
+            try {
+                await fetch(`${API_BASE}/api/workers/${workerId}`, { method: 'DELETE' });
+            } catch (err) {
+                console.warn("FastAPI offline. Menghapus lokal di cache.");
+            }
+
+            workersCache = workersCache.filter(w => w.id !== workerId);
+            renderWorkersTable();
+        }
+
+        function setRegStatus(status) {
+            regStatus = status;
+            const activeBtn = document.getElementById('status-btn-active');
+            const inactiveBtn = document.getElementById('status-btn-inactive');
+
+            if (status === 'Active') {
+                activeBtn.className = "flex-1 py-2 bg-emerald-950/40 border border-neonGreen text-neonGreen font-semibold rounded-lg text-xs";
+                inactiveBtn.className = "flex-1 py-2 bg-[#21252D] border border-[#2A2F3A] text-slate-400 font-semibold rounded-lg text-xs";
+            } else {
+                activeBtn.className = "flex-1 py-2 bg-[#21252D] border border-[#2A2F3A] text-slate-400 font-semibold rounded-lg text-xs";
+                inactiveBtn.className = "flex-1 py-2 bg-red-950/40 border border-kidecoRed text-kidecoRed font-semibold rounded-lg text-xs";
+            }
+        }
+
+        function clearRegForm() {
+            document.getElementById('worker-register-form').reset();
+            setRegStatus('Active');
+            document.getElementById('reg-id').value = 'WK-' + Math.floor(Math.random() * 2000 + 1000);
+        }
+
+        // --- HANDLERS FOR FALLBACK OFF-STATE ---
+        function handleMainStreamError(img) {
+            console.warn("Kamera utama gagal memuat stream. Menampilkan visual canvas offline.");
+            img.src = "https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&q=80&w=800";
+            img.classList.add('grayscale', 'opacity-40');
+            
+            const parent = img.parentElement;
+            if (!parent.querySelector('.fallback-badge')) {
+                const badge = document.createElement('div');
+                badge.className = "fallback-badge absolute inset-0 flex flex-col items-center justify-center bg-black/60 text-center px-4 select-none";
+                badge.innerHTML = `
+                    <div class="p-3 bg-amber-950/40 border border-warningAmber/30 rounded-lg text-warningAmber mb-3">
+                        <i data-lucide="video-off" class="w-6 h-6"></i>
+                    </div>
+                    <span class="text-sm text-warningAmber font-bold uppercase tracking-wider">FastAPI Server Offline</span>
+                    <p class="text-xs text-slate-400 mt-1 max-w-sm leading-relaxed">Jalankan backend local Anda dengan perintah <b>uvicorn main:app --reload --port 8000</b> untuk memproses aliran CCTV cerdas dengan model YOLO asli!</p>
+                `;
+                parent.appendChild(badge);
+                lucide.createIcons();
+            }
+        }
+
+        function handleStreamError(img, camId) {
+            console.warn(`Streaming card ${camId} gagal.`);
+            img.src = "https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&q=80&w=400";
+            img.classList.add('grayscale', 'opacity-40');
+            
+            const parent = img.parentElement;
+            if (!parent.querySelector('.fallback-badge')) {
+                const badge = document.createElement('div');
+                badge.className = "fallback-badge absolute inset-0 flex flex-col items-center justify-center bg-black/60 text-center px-4 select-none";
+                badge.innerHTML = `
+                    <span class="text-[10px] text-warningAmber font-bold uppercase">OFFLINE</span>
+                `;
+                parent.appendChild(badge);
+            }
+        }
+
+        // --- PAGE INITIALIZATIONS ---
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            
+            // Populate next worker ID placeholder
+            document.getElementById('reg-id').value = 'WK-' + Math.floor(Math.random() * 1000 + 3015);
+            
+            // Perform Initial data pull
+            fetchDashboardMetrics();
+            fetchWorkers();
+
+            // Dynamic stream initial load
+            updateCCTVStream();
+
+            // Interval metric pulling (Every 10 seconds)
+            setInterval(fetchDashboardMetrics, 10000);
+        });
+    </script>
+</body>
+</html>

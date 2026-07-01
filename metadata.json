@@ -1,0 +1,6 @@
+{
+  "name": "MineGuard",
+  "description": "Premium Light Command Center for safety compliance monitoring and PPE detection at Kideco.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
