@@ -310,71 +310,51 @@ Target class:
 - cuDNN *(Recommended)*
 
 ---
-
-## 1. Clone Repository
+### 1. Clone Repository
 
 ```bash
 git clone <repository-url>
-
 cd MineGuard
 ```
 
----
-
-## 2. Backend Setup
+### 2. Install Frontend Dependencies
 
 ```bash
-cd backend
-
-python -m venv .venv
+npm install
 ```
 
-### Linux / macOS
-
-```bash
-source .venv/bin/activate
-```
-
-### Windows
-
-```bash
-.venv\Scripts\activate
-```
-
-Install dependency
+### 3. Install Python Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-Run FastAPI
+### 4. Run AI Backend
 
 ```bash
+cd local_deployment
+
 python -m uvicorn main:app --reload --port 8000
 ```
 
-Backend berjalan di:
+### 5. Run Frontend
 
-```
-http://127.0.0.1:8000
-```
-
----
-
-## 3. Frontend Setup
+Buka terminal baru lalu jalankan:
 
 ```bash
-cd frontend
-
-npm install
-
 npm run dev
 ```
 
-Frontend biasanya berjalan pada:
+Frontend akan berjalan di:
 
 ```
 http://localhost:5173
+```
+
+Backend AI berjalan di:
+
+```
+http://127.0.0.1:8000
 ```
 
 ---
