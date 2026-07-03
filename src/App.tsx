@@ -92,11 +92,12 @@ export default function App() {
 
   // Initial Cameras matching Page 3 PDF
   const [cameras, setCameras] = useState<Camera[]>([
-    { id: 'CAM-WS-03', location: 'Workshop', violations24h: 84, detected24h: 108, status: 'Online' },
-    { id: 'CAM-LP-05', location: 'Pit A', violations24h: 32, detected24h: 108, status: 'Online' },
-    { id: 'CAM-PB-07', location: 'Pit B', violations24h: 24, detected24h: 48, status: 'Online' },
-    { id: 'CAM-WS-01', location: 'Workshop', violations24h: 24, detected24h: 48, status: 'Online' },
-    { id: 'CAM-WS-02', location: 'Workshop', violations24h: 24, detected24h: 48, status: 'Online' }
+    { id: 'CAM-WS-01', location: 'Workshop Pit A', violations24h: 24, detected24h: 112, status: 'Online' },
+    { id: 'CAM-WS-02', location: 'Workshop Pit B', violations24h: 32, detected24h: 96, status: 'Online' },
+    { id: 'CAM-LP-05', location: 'Loading Point Alpha', violations24h: 12, detected24h: 84, status: 'Online' },
+    { id: 'CAM-PB-07', location: 'Pit B Coal Mine', violations24h: 5, detected24h: 62, status: 'Online' },
+    { id: 'CAM-WH-12', location: 'Main Warehouse', violations24h: 8, detected24h: 140, status: 'Online' },
+    { id: 'CAM-HA-03', location: 'Heavy Equipment Area', violations24h: 15, detected24h: 74, status: 'Online' }
   ]);
 
   // Simulated ticks to increase metrics every 15 seconds to look dynamic and real-time
