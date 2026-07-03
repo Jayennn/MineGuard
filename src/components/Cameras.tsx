@@ -19,6 +19,11 @@ export interface CCTVStream {
   videoUrl: string;
   snapshotUrl: string;
   status: 'Connected' | 'Violation Detected' | 'Offline';
+
+  currentStatus?: 'Connected' | 'Violation Detected' | 'Offline';
+
+  violations24h?: number;
+  detected24h?: number;
 }
 
 export const cctvStreams: CCTVStream[] = [
